@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Captação de Alunos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #001F54, #003366);
+            color: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background-color: #fff;
+            color: #333;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        }
+        h1 {
+            text-align: center;
+            color: #FFCC00;
+            margin-bottom: 30px;
+        }
+        label {
+            font-size: 16px;
+            color: #555;
+            display: block;
+            margin-top: 15px;
+        }
+        input, button {
+            width: 100%;
+            padding: 12px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #001F54;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #003366;
+        }
+        .result-container {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #chart-container {
+            margin-top: 30px;
+            background: #fff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        #chart-container canvas {
+            max-width: 100%;
+            height: 400px;
+        }
+        .additional-info {
+            margin-top: 20px;
+            font-size: 16px;
+            background-color: #EEF0F1;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .highlight {
+            color: #FFCC00;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Calculadora de Captação de Alunos</h1>
+
+        <label for="unitName">Nome da Unidade:</label>
+        <input type="text" id="unitName" placeholder="Digite o nome da unidade">
+
+        <label for="courseName">Nome do Curso:</label>
+        <input type="text" id="courseName" placeholder="Digite o nome do curso">
+
+        <label for="currentCaptures">Quantidade de Captados Atuais:</label>
+        <input type="number" id="currentCaptures" placeholder="Digite a quantidade de captados" min="0">
+
+        <label for="currentDays">Quantidade de Dias Úteis Atuais de Captação:</label>
+        <input type="number" id="currentDays" placeholder="Digite a quantidade de dias úteis já passados" min="0">
+
+        <label for="goal">Meta para 2025.1:</label>
+        <input type="number" id="goal" placeholder="Digite sua meta de captação para 2025.1" min="0">
+
+        <button onclick="calculate()">Calcular</button>
+
+        <div id="chart-container">
+            <canvas id="chart"></canvas>
+        </div>
+
+        <div class="additional-info" id="additional-info">
+            <!-- Informações aparecerão aqui após o cálculo -->
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            // Obter os valores dos campos
+            const currentCaptures = parseInt(document.getElementById('currentCaptures').value);
+            const currentDays = parseInt(document.getElementById('currentDays').value);
+            const goal = parseInt(document.getElementById('goal').value);
+
+            // Validar se os campos são válidos
+            if (isNaN(currentCaptures) || isNaN(currentDays) || currentDays === 0 || isNaN(goal)) {
+                alert("Por favor, preencha todos os campos corretamente.");
+                return;
+            }
+
+            // Calcular projeção para 15 de Abril
+            const projected15April = Math.round((currentCaptures / currentDays) * 104);
+
+            // Calcular projeção para 30 de Abril
+            const projected30April = Math.round((currentCaptures / currentDays) * 114);
+
+            // Captação diária necessária para atingir a meta
+            const dailyRateForGoal = Math.ceil((goal - currentCaptures) / (114 - currentDays));
+
+            // Diferença para atingir a meta em 15 de Abril e 30 de Abril
+            const diff15April = goal - projected15April;
+            const diff30April = goal - projected30April;
+
+            // Gerar gráfico
+            generateChart(projected15April, projected30April);
+
+            // Exibir mais dados adicionais
+            displayAdditionalInfo(currentCaptures, currentDays, goal, projected15April, projected30April, dailyRateForGoal, diff15April, diff30April);
+        }
+
+        function generateChart(projected15April, projected30April) {
+            const ctx = document.getElementById('chart').getContext('2d');
+
+            const chartData = {
+                labels: ['Captação até 15 de Abril', 'Captação até 30 de Abril'],
+                datasets: [{
+                    label: 'Projeção de Captação',
+                    data: [projected15April, projected30April],
+                    backgroundColor: ['#001F54', '#FFCC00'],
+                    borderColor: ['#003366', '#FFC107'],
+                    borderWidth: 1
+                }]
+            };
+
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    datalabels: {
+                        color: '#000',
+                        font: {
+                            weight: 'bold',
+                            size: 14
+                        },
+                        anchor: 'end',
+                        align: 'top',
+                        formatter: function(value) {
+                            return value;
+                        }
+                    }
+                }
+            };
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: chartOptions,
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        function displayAdditionalInfo(currentCaptures, currentDays, goal, projected15April, projected30April, dailyRateForGoal, diff15April, diff30April) {
+            const dailyCaptureRate = Math.ceil(currentCaptures / currentDays);
+
+            const additionalInfo = `
+                <h3>Informações:</h3>
+                <p><strong>Captação Diária Atual:</strong> ${dailyCaptureRate} alunos por dia útil</p>
+                <p><strong>Captação Diária Necessária para Atingir a Meta:</strong> ${dailyRateForGoal} alunos por dia útil</p>
+                <p><strong>Total de Captados até 15 de Abril:</strong> ${projected15April}</p>
+                <p><strong>Total de Captados até 30 de Abril:</strong> ${projected30April}</p>
+                <p><strong>Diferença para atingir a meta em 15 de Abril:</strong> ${diff15April} alunos</p>
+                <p><strong>Diferença para atingir a meta em 30 de Abril:</strong> ${diff30April} alunos</p>
+            `;
+
+            document.getElementById('additional-info').innerHTML = additionalInfo;
+        }
+    </script>
+</body>
+</html>
